@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Resume Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Custom Styles */
+        :root {
+            --sidebar-bg: #2c3e50; /* Dark blue-gray */
+            --main-bg: #ffffff;
+            --accent-color: #3498db; /* A vibrant blue */
+            --sidebar-text: #ecf0f1; /* Light gray for text */
+            --main-text: #34495e; /* Dark gray for main text */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* gray-100 */
+        }
+        h1, h2, h3, .resume-name {
+            font-family: 'Playfair Display', serif;
+        }
+        .form-section {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .form-input {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        .add-btn, .remove-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 9999px;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            line-height: 1;
+            transition: background-color 0.2s;
+        }
+        .add-btn:hover, .remove-btn:hover {
+            background-color: #2980b9;
+        }
+        .remove-btn { background-color: #e74c3c; }
+        .remove-btn:hover { background-color: #c0392b; }
+        
+        .action-btn {
+            padding: 1rem 2rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s, transform 0.2s;
+            color: white;
+        }
+        .download-btn {
+            background-color: #27ae60;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+        .download-btn:hover {
+            background-color: #229954;
+            transform: translateY(-2px);
+        }
+
+        /* New Resume Preview Styles */
+        #resume-preview {
+            background-color: var(--main-bg);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            width: 21cm;
+            min-height: 29.7cm;
+            margin: auto;
+            display: flex;
+        }
+        .resume-sidebar {
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            width: 35%;
+            padding: 2.5rem;
+        }
+        .resume-main {
+            width: 65%;
+            padding: 2.5rem;
+            color: var(--main-text);
+        }
+        #preview-profile-pic {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 5px solid var(--accent-color);
+            margin: 0 auto 1.5rem;
+            object-fit: cover;
+            display: block;
+        }
+        .sidebar-section-title {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.25rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        .main-section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #34495e;
+            border-bottom: 2px solid var(--sidebar-bg);
+            padding-bottom: 0.25rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+        .contact-item i {
+            width: 15px;
+            text-align: center;
+            margin-top: 3px;
+        }
+        #preview-name-main {
+            font-size: 2.8rem;
+            color: var(--sidebar-bg);
+        }
+        #preview-job-title-main {
+            font-size: 1.25rem;
+            color: var(--main-text);
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+        .skills-list {
+            list-style: none;
+            padding-left: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .skills-list li {
+            background-color: rgba(255,255,255,0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+        }
+        .bullet-list {
+            list-style-position: outside;
+            padding-left: 1rem;
+        }
+        .bullet-list li {
+             margin-bottom: 0.25rem;
+        }
+
+    </style>
+</head>
+<body>
+    <header class="bg-white shadow-md py-4">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Digital Resume Builder</h1>
+            <p class="text-gray-600 mt-1">Create a professional resume inspired by modern designs.</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Form Section -->
+            <div class="form-container space-y-6">
+                
+                <!-- Personal Details -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Personal Details</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="profile-pic-input" class="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
+                            <input type="file" id="profile-pic-input" accept="image/*" class="form-input">
+                        </div>
+                        <input type="text" id="name" class="form-input" placeholder="Full Name" onkeyup="updatePreview()">
+                        <input type="text" id="job-title" class="form-input" placeholder="Job Title" onkeyup="updatePreview()">
+                        <input type="email" id="email" class="form-input" placeholder="Email Address" onkeyup="updatePreview()">
+                        <input type="tel" id="phone" class="form-input" placeholder="Phone Number" onkeyup="updatePreview()">
+                        <input type="text" id="location" class="form-input" placeholder="City, Country" onkeyup="updatePreview()">
+                        <input type="url" id="linkedin" class="form-input" placeholder="LinkedIn Profile URL" onkeyup="updatePreview()">
+                        <input type="url" id="github" class="form-input" placeholder="GitHub Profile URL" onkeyup="updatePreview()">
+                        <textarea id="summary" class="form-input" placeholder="Brief summary about yourself..." onkeyup="updatePreview()"></textarea>
+                    </div>
+                </div>
+
+                <!-- Education -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Education</h2>
+                    <div id="education-list" class="space-y-4">
+                        <!-- Education entries will be dynamically added here -->
+                    </div>
+                    <button class="add-btn mt-4" onclick="addEntry('education')"><i class="fas fa-plus"></i> Add Education</button>
+                </div>
+
+                <!-- Work Experience -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Work Experience (Optional)</h2>
+                    <div id="experience-list" class="space-y-4">
+                        <!-- Experience entries will be dynamically added here -->
+                    </div>
+                    <button class="add-btn mt-4" onclick="addEntry('experience')"><i class="fas fa-plus"></i> Add Experience</button>
+                </div>
+                
+                <!-- Projects -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Projects</h2>
+                    <div id="project-list" class="space-y-4">
+                       <!-- Project entries will be dynamically added here -->
+                    </div>
+                    <button class="add-btn mt-4" onclick="addEntry('project')"><i class="fas fa-plus"></i> Add Project</button>
+                </div>
+
+                <!-- Accomplishments -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Accomplishments</h2>
+                    <div id="accomplishment-list" class="space-y-4">
+                        <!-- Accomplishment entries will be dynamically added here -->
+                    </div>
+                    <button class="add-btn mt-4" onclick="addEntry('accomplishment')"><i class="fas fa-plus"></i> Add Accomplishment</button>
+                </div>
+                
+                <!-- Certifications -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Certifications</h2>
+                    <div id="certification-list" class="space-y-4">
+                        <!-- Certification entries will be dynamically added here -->
+                    </div>
+                    <button class="add-btn mt-4" onclick="addEntry('certification')"><i class="fas fa-plus"></i> Add Certification</button>
+                </div>
+
+                <!-- Skills -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Technical Skills</h2>
+                    <textarea id="skills" class="form-input" placeholder="Enter skills, separated by commas..." onkeyup="updatePreview()"></textarea>
+                </div>
+                
+                <!-- Other Skills -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Languages & Soft Skills</h2>
+                    <textarea id="other-skills" class="form-input" placeholder="e.g., English, Hindi, Team Collaboration..." onkeyup="updatePreview()"></textarea>
+                </div>
+                
+                <!-- Custom Sections -->
+                <div class="form-section">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Custom Sidebar Sections</h2>
+                    <div id="custom-section-list" class="space-y-4">
+                        <!-- Custom section entries will be dynamically added here -->
+                    </div>
+                    <button class="add-btn mt-4" onclick="addEntry('custom')"><i class="fas fa-plus"></i> Add Custom Section</button>
+                </div>
+
+
+                <div class="text-center py-4">
+                    <button id="download-btn" class="action-btn download-btn">
+                        <i class="fas fa-download mr-2"></i> Download as PDF
+                    </button>
+                    <p id="validation-msg" class="text-red-500 mt-2 hidden">Please fill in your Name and Email.</p>
+                    <p id="loading-text" class="text-gray-600 mt-2 hidden">Generating PDF, please wait...</p>
+                </div>
+            </div>
+
+            <!-- Resume Preview Section -->
+            <div class="sticky top-8">
+                <div id="resume-preview">
+                    <!-- Sidebar -->
+                    <div class="resume-sidebar ">
+                        <img id="preview-profile-pic" src="https://placehold.co/150x150/ecf0f1/2c3e50?text=PIC" alt="Profile Picture">
+                        
+                        <div class="mt-8">
+                            <h3 class="sidebar-section-title">Contact</h3>
+                            <div id="preview-contact-list" class="mt-4 space-y-2 text-sm">
+                                <p class="contact-item"><i class="fas fa-envelope"></i> <span id="preview-email"></span></p>
+                                <p class="contact-item"><i class="fas fa-phone"></i> <span id="preview-phone"></span></p>
+                                <p class="contact-item"><i class="fas fa-map-marker-alt"></i> <span id="preview-location"></span></p>
+                                <p class="contact-item"><i class="fab fa-linkedin"></i> <a id="preview-linkedin" href="#" target="_blank" class="hover:underline"></a></p>
+                                <p class="contact-item"><i class="fab fa-github"></i> <a id="preview-github" href="#" target="_blank" class="hover:underline"></a></p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="sidebar-section-title">Technical Skills</h3>
+                            <ul id="preview-skills-list" class="skills-list mt-2 text-sm"></ul>
+                        </div>
+                        
+                        <div>
+                            <h3 class="sidebar-section-title">Other Skills</h3>
+                            <ul id="preview-other-skills-list" class="skills-list mt-2 text-sm"></ul>
+                        </div>
+                        
+                        <div id="custom-sections-preview"></div>
+
+                    </div>
+                    <!-- Main Content -->
+                    <div class="resume-main">
+                        <h1 id="preview-name-main" class="resume-name">Your Name</h1>
+                        <p id="preview-job-title-main">Your Job Title</p>
+
+                        <div>
+                            <h2 class="main-section-title">Summary</h2>
+                            <p id="preview-summary" class="mt-2 text-sm leading-relaxed"></p>
+                        </div>
+                        
+                        <div id="education-section-main" class="mt-6">
+                            <h2 class="main-section-title">Education</h2>
+                            <div id="preview-education-list"></div>
+                        </div>
+
+                        <div id="experience-section-main" class="mt-6">
+                            <h2 class="main-section-title">Work Experience</h2>
+                            <div id="preview-experience-list"></div>
+                        </div>
+                        
+                        <div id="projects-section-main" class="mt-6">
+                            <h2 class="main-section-title">Projects</h2>
+                            <div id="preview-project-list"></div>
+                        </div>
+
+                        <div id="accomplishments-section-main" class="mt-6">
+                            <h2 class="main-section-title">Accomplishments</h2>
+                            <div id="preview-accomplishment-list" class="space-y-2"></div>
+                        </div>
+
+                        <div id="certifications-section-main" class="mt-6">
+                            <h2 class="main-section-title">Certifications</h2>
+                            <div id="preview-certification-list" class="space-y-2"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+
+        document.getElementById('profile-pic-input').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) { document.getElementById('preview-profile-pic').src = e.target.result; }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function updatePreview() {
+            // Main Content
+            document.getElementById('preview-name-main').textContent = document.getElementById('name').value || 'Your Name';
+            document.getElementById('preview-job-title-main').textContent = document.getElementById('job-title').value || 'Your Job Title';
+            document.getElementById('preview-summary').textContent = document.getElementById('summary').value || 'Brief summary about yourself...';
+
+            // Sidebar Contact Info
+            document.getElementById('preview-email').textContent = document.getElementById('email').value || '';
+            document.getElementById('preview-phone').textContent = document.getElementById('phone').value || '';
+            document.getElementById('preview-location').textContent = document.getElementById('location').value || '';
+            
+            const linkedinLink = document.getElementById('preview-linkedin');
+            const linkedinInput = document.getElementById('linkedin').value;
+            linkedinLink.href = linkedinInput;
+            linkedinLink.textContent = linkedinInput ? linkedinInput.replace(/^(https?:\/\/)?(www\.)?/, '') : '';
+
+            const githubLink = document.getElementById('preview-github');
+            const githubInput = document.getElementById('github').value;
+            githubLink.href = githubInput;
+            githubLink.textContent = githubInput ? githubInput.replace(/^(https?:\/\/)?(www\.)?/, '') : '';
+
+            // Education (in main)
+            const educationList = document.getElementById('preview-education-list');
+            educationList.innerHTML = '';
+            document.querySelectorAll('.education-entry').forEach(entry => {
+                const institution = entry.querySelector('.institution').value;
+                const degree = entry.querySelector('.degree').value;
+                const dates = entry.querySelector('.edu-dates').value;
+                if (institution || degree || dates) {
+                    const div = document.createElement('div');
+                    div.className = 'mb-4';
+                    div.innerHTML = `<h3 class="font-bold text-lg">${institution || 'University Name'}</h3><p class="italic text-gray-700">${degree || 'Degree Name'}</p><p class="text-sm text-gray-500">${dates || 'Date'}</p>`;
+                    educationList.appendChild(div);
+                }
+            });
+
+            // Work Experience
+            const experienceList = document.getElementById('preview-experience-list');
+            experienceList.innerHTML = '';
+            let hasExperience = false;
+            document.querySelectorAll('.experience-entry').forEach(entry => {
+                const company = entry.querySelector('.company').value;
+                const role = entry.querySelector('.role').value;
+                const dates = entry.querySelector('.exp-dates').value;
+                const description = entry.querySelector('.description').value.replace(/\n/g, '<br>');
+                if (company || role || dates || description) {
+                    hasExperience = true;
+                    const div = document.createElement('div');
+                    div.className = 'mb-4';
+                    div.innerHTML = `<h3 class="font-bold text-lg">${role || 'Role'}</h3><p class="font-semibold text-md text-gray-600">${company || 'Company'}</p><p class="text-xs text-gray-500 mb-1">${dates || 'Date'}</p><div class="text-sm leading-relaxed">${description || '...'}</div>`;
+                    experienceList.appendChild(div);
+                }
+            });
+            document.getElementById('experience-section-main').style.display = hasExperience ? 'block' : 'none';
+
+            // Projects
+            const projectList = document.getElementById('preview-project-list');
+            projectList.innerHTML = '';
+            document.querySelectorAll('.project-entry').forEach(entry => {
+                const name = entry.querySelector('.project-name').value;
+                const description = entry.querySelector('.project-description').value;
+                if (name || description) {
+                    const div = document.createElement('div');
+                    div.className = 'mb-4';
+                    const bulletPoints = description.split('\n').filter(line => line.trim() !== '').map(line => `<li>${line.trim()}</li>`).join('');
+                    div.innerHTML = `<h3 class="font-bold text-lg">${name || 'Project Name'}</h3><ul class="text-sm leading-relaxed bullet-list mt-1">${bulletPoints}</ul>`;
+                    projectList.appendChild(div);
+                }
+            });
+            
+            // Accomplishments
+            const accomplishmentList = document.getElementById('preview-accomplishment-list');
+            let hasAccomplishments = false;
+            accomplishmentList.innerHTML = '';
+            document.querySelectorAll('.accomplishment-entry').forEach(entry => {
+                const description = entry.querySelector('.accomplishment-description').value;
+                if(description){
+                    hasAccomplishments = true;
+                    const p = document.createElement('p');
+                    p.className = 'text-sm';
+                    p.innerHTML = `&bull; ${description}`;
+                    accomplishmentList.appendChild(p);
+                }
+            });
+            document.getElementById('accomplishments-section-main').style.display = hasAccomplishments ? 'block' : 'none';
+
+            // Certifications
+            const certificationList = document.getElementById('preview-certification-list');
+            let hasCertifications = false;
+            certificationList.innerHTML = '';
+            document.querySelectorAll('.certification-entry').forEach(entry => {
+                const name = entry.querySelector('.cert-name').value;
+                const issuer = entry.querySelector('.cert-issuer').value;
+                if(name || issuer){
+                    hasCertifications = true;
+                    const p = document.createElement('p');
+                    p.className = 'text-sm';
+                    p.innerHTML = `&bull; <strong>${name || 'Certificate'}</strong> from ${issuer || 'Issuer'}`;
+                    certificationList.appendChild(p);
+                }
+            });
+            document.getElementById('certifications-section-main').style.display = hasCertifications ? 'block' : 'none';
+
+
+            // Skills
+            ['skills', 'other-skills'].forEach(skillType => {
+                 const skillsList = document.getElementById(`preview-${skillType}-list`);
+                 skillsList.innerHTML = '';
+                 const skills = document.getElementById(skillType).value.split(',').filter(skill => skill.trim() !== '');
+                 skills.forEach(skill => {
+                     const li = document.createElement('li');
+                     li.textContent = skill.trim();
+                     skillsList.appendChild(li);
+                 });
+            });
+
+            // Custom Sections
+            const customSectionsPreview = document.getElementById('custom-sections-preview');
+            customSectionsPreview.innerHTML = '';
+            document.querySelectorAll('.custom-entry').forEach(entry => {
+                const title = entry.querySelector('.custom-title').value;
+                const content = entry.querySelector('.custom-content').value;
+                if (title) {
+                    const div = document.createElement('div');
+                    const bulletPoints = content.split('\n').filter(line => line.trim() !== '').map(line => `<li>${line.trim()}</li>`).join('');
+                    div.innerHTML = `<h3 class="sidebar-section-title">${title}</h3><ul class="text-sm bullet-list mt-2">${bulletPoints}</ul>`;
+                    customSectionsPreview.appendChild(div);
+                }
+            });
+        }
+        
+        function addEntry(type, data = {}) {
+            const list = document.getElementById(`${type === 'custom' ? 'custom-section' : type}-list`);
+            const newEntry = document.createElement('div');
+            newEntry.className = `${type}-entry space-y-2 border-t pt-4 mt-4 relative`;
+            
+            let content = '';
+            if (type === 'education') {
+                content = `<input type="text" class="form-input institution" placeholder="University/School" value="${data.institution || ''}" onkeyup="updatePreview()"><input type="text" class="form-input degree" placeholder="Degree" value="${data.degree || ''}" onkeyup="updatePreview()"><input type="text" class="form-input edu-dates" placeholder="Date" value="${data.dates || ''}" onkeyup="updatePreview()">`;
+            } else if (type === 'experience') {
+                content = `<input type="text" class="form-input company" placeholder="Company Name" value="${data.company || ''}" onkeyup="updatePreview()"><input type="text" class="form-input role" placeholder="Your Role" value="${data.role || ''}" onkeyup="updatePreview()"><input type="text" class="form-input exp-dates" placeholder="Date" value="${data.dates || ''}" onkeyup="updatePreview()"><textarea class="form-input description" placeholder="Key responsibilities..." onkeyup="updatePreview()">${data.description || ''}</textarea>`;
+            } else if (type === 'project') {
+                 content = `<input type="text" class="form-input project-name" placeholder="Project Name" value="${data.name || ''}" onkeyup="updatePreview()"><textarea class="form-input project-description" placeholder="Project description (each line is a bullet)..." onkeyup="updatePreview()">${data.description || ''}</textarea>`;
+            } else if (type === 'accomplishment') {
+                content = `<textarea class="form-input accomplishment-description" placeholder="Describe an accomplishment..." onkeyup="updatePreview()">${data.description || ''}</textarea>`;
+            } else if (type === 'certification') {
+                content = `<input type="text" class="form-input cert-name" placeholder="Certificate Name" value="${data.name || ''}" onkeyup="updatePreview()"><input type="text" class="form-input cert-issuer" placeholder="Issuing Organization" value="${data.issuer || ''}" onkeyup="updatePreview()">`;
+            } else if (type === 'custom') {
+                 content = `<input type="text" class="form-input custom-title" placeholder="Custom Section Title" value="${data.title || ''}" onkeyup="updatePreview()"><textarea class="form-input custom-content" placeholder="Content (each line is a bullet)..." onkeyup="updatePreview()">${data.content || ''}</textarea>`;
+            }
+            
+            newEntry.innerHTML = content + '<button class="remove-btn absolute top-0 right-0 mt-2" onclick="removeEntry(this)"><i class="fas fa-trash"></i></button>';
+            list.appendChild(newEntry);
+        }
+
+        function removeEntry(button) {
+            button.parentElement.remove();
+            updatePreview();
+        }
+
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const downloadButton = document.getElementById('download-btn');
+            const loadingText = document.getElementById('loading-text');
+            const validationMsg = document.getElementById('validation-msg');
+            const resumeElement = document.getElementById('resume-preview');
+            const name = document.getElementById('name').value || 'resume';
+            const filename = `${name.replace(/\s+/g, '_').toLowerCase()}_resume.pdf`;
+
+            if (!document.getElementById('name').value || !document.getElementById('email').value) {
+                validationMsg.classList.remove('hidden');
+                setTimeout(() => validationMsg.classList.add('hidden'), 3000);
+                return;
+            }
+
+            downloadButton.disabled = true;
+            loadingText.classList.remove('hidden');
+
+            html2canvas(resumeElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(filename);
+            }).catch(err => {
+                console.error("Error generating PDF:", err);
+                alert("Sorry, an error occurred while generating the PDF.");
+            }).finally(() => {
+                downloadButton.disabled = false;
+                loadingText.classList.add('hidden');
+            });
+        });
+
+        window.onload = () => {
+            addEntry('education');
+            addEntry('experience');
+            addEntry('project');
+            addEntry('accomplishment');
+            addEntry('certification');
+            addEntry('custom');
+            updatePreview();
+        };
+    </script>
+</body>
+</html>
